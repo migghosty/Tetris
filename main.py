@@ -7,100 +7,71 @@ BLOCK_TYPES = ['i', 'j', 'l', 'o', 's', 't', 'z']
 BLOCK_SHAPES = [
     # block i
     [
-        [[0,0,0,0],
-         [1,1,1,1],
-         [0,0,0,0],
-         [0,0,0,0]],
-        [[0,0,1,0],
-         [0,0,1,0],
-         [0,0,1,0],
-         [0,0,1,0]]
+        [[1,1,1,1]],
+        [[1],
+         [1],
+         [1],
+         [1]]
     ],
     # block j
     [
-        [[0,0,0,0],
-         [1,0,0,0],
-         [1,1,1,0],
-         [0,0,0,0]],
-        [[0,0,1,1],
-         [0,0,1,0],
-         [0,0,1,0],
-         [0,0,0,0]],
-        [[0,0,0,0],
-         [1,1,1,0],
-         [0,0,1,0],
-         [0,0,0,0]],
-        [[0,1,0,0],
-         [0,1,0,0],
-         [1,1,0,0],
-         [0,0,0,0]]
+        [[1,0,0],
+         [1,1,1]],
+        [[1,1],
+         [1,0],
+         [1,0]],
+        [[1,1,1],
+         [0,0,1]],
+        [[0,1],
+         [0,1],
+         [1,1]]
     ],
     # block l
     [
-        [[0,0,0,0],
-         [0,0,0,1],
-         [0,1,1,1],
-         [0,0,0,0]],
-        [[0,0,1,0],
-         [0,0,1,0],
-         [0,0,1,1],
-         [0,0,0,0]],
-        [[0,0,0,0],
-         [1,1,1,0],
-         [1,0,0,0],
-         [0,0,0,0]],
-        [[1,1,0,0],
-         [0,1,0,0],
-         [0,1,0,0],
-         [0,0,0,0]]
+        [[0,0,1],
+         [1,1,1]],
+        [[1,0],
+         [1,0],
+         [1,1]],
+        [[1,1,1],
+         [1,0,0]],
+        [[1,1],
+         [0,1],
+         [0,1]]
     ],
     # block o
     [
-        [[0,0,0,0],
-         [0,1,1,0],
-         [0,1,1,0],
-         [0,0,0,0]]
+        [[1,1],
+         [1,1]]
     ],
     # block s
     [
-        [[0,0,0,0],
-         [0,1,1,0],
-         [1,1,0,0],
-         [0,0,0,0]],
-        [[1,0,0,0],
-         [1,1,0,0],
-         [0,1,0,0],
-         [0,0,0,0]]
+        [[0,1,1],
+         [1,1,0]],
+        [[1,0],
+         [1,1],
+         [0,1]]
     ],
     # block t
     [
-        [[0,0,0,0],
-         [0,1,0,0],
-         [1,1,1,0],
-         [0,0,0,0]],
-        [[0,1,0,0],
-         [0,1,1,0],
-         [0,1,0,0],
-         [0,0,0,0]],
-        [[0,0,0,0],
-         [1,1,1,0],
-         [0,1,0,0],
-         [0,0,0,0]],
-        [[0,1,0,0],
-         [1,1,0,0],
-         [0,1,0,0],
-         [0,0,0,0]]
+        [[0,1,0],
+         [1,1,1]],
+        [[1,0],
+         [1,1],
+         [1,0]],
+        [[1,1,1],
+         [0,1,0]],
+        [[0,1],
+         [1,1],
+         [0,1]]
     ],
     # block z
     [
-        [[0,0,0,0],
-         [0,1,1,0],
-         [0,0,1,1],
-         [0,0,0,0]],
-        [[0,0,0,1],
-         [0,0,1,1],
-         [0,0,1,0],
-         [0,0,0,0]]
+        [[1,1,0],
+         [0,1,1]],
+        [[0,1],
+         [1,1],
+         [1,0]]
     ]
 ]
 
@@ -110,6 +81,10 @@ class Block:
         self.rot = rot
         self.x = x
         self.y = y
+
+    def right_most_block(self) -> int:
+        shape_grid = BLOCK_SHAPES[BLOCK_TYPES.index(self.type)][self.rot]
+        return self.x + len(shape_grid[0])
 
 class TetrisGame:
     def __init__(self):
@@ -129,6 +104,9 @@ class TetrisGame:
 
         # define screen size
         self._screen = pygame.display.set_mode([const.SCREEN_WIDTH, const.SCREEN_HEIGHT])
+
+        # initialize clock
+        self.clock = pygame.time.Clock()
 
     def _custom_settings(self):
         # set caption and icon, and title for screen
@@ -162,8 +140,8 @@ class TetrisGame:
         shape_grid = BLOCK_SHAPES[BLOCK_TYPES.index(self._block_in_motion.type)][self._block_in_motion.rot]
         for i in range(len(shape_grid)):
             for j in range(len(shape_grid[i])):
-                if shape_grid[j][i] == 1:
-                    self._erase_block(self._block_in_motion.x+1+i,self._block_in_motion.y+1+j)
+                if shape_grid[i][j] == 1:
+                    self._erase_block(self._block_in_motion.x+1+j,self._block_in_motion.y+1+i)
 
     def draw_border(self) -> None:
         # draws the top and bottom row
@@ -179,11 +157,23 @@ class TetrisGame:
         shape_grid = BLOCK_SHAPES[BLOCK_TYPES.index(block.type)][block.rot]
         for i in range(len(shape_grid)):
             for j in range(len(shape_grid[i])):
-                if shape_grid[j][i] == 1:
-                    self._draw_block(block.x+1+i,block.y+1+j,f"imgs/{block.type}_block.png")
+                if shape_grid[i][j] == 1:
+                    self._draw_block(block.x+1+j,block.y+1+i,f"imgs/{block.type}_block.png")
 
     def rotate_shape(self, block: Block) -> None:
         block.rot = (block.rot + 1) % len(BLOCK_SHAPES[BLOCK_TYPES.index(block.type)])
+
+    def rotate_shape_back(self, block: Block) -> None:
+        block.rot = (block.rot - 1) % len(BLOCK_SHAPES[BLOCK_TYPES.index(block.type)])
+
+    def drop_block(self, block: Block) -> None:
+        block.y += 1
+
+    def block_left(self, block: Block) -> None:
+        block.x -= 1
+
+    def block_right(self, block: Block) -> None:
+        block.x += 1
 
     def _get_random_block(self) -> Block:
         return Block(random.choice(BLOCK_TYPES),0,const.BOARD_WIDTH/2-3,0)
@@ -195,9 +185,27 @@ class TetrisGame:
 
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_UP:
-                    # erase the old shape and rotate, then redraw it
                     self._erase_block_in_motion()
                     self.rotate_shape(self._block_in_motion)
+                    if (self._block_in_motion.x < 0 or
+                            self._block_in_motion.right_most_block() > const.BOARD_WIDTH - 2):
+                        self.rotate_shape_back(self._block_in_motion)
+
+
+                if event.key == pygame.K_DOWN:
+                    # erase the old shape and drop the new one down 1
+                    self._erase_block_in_motion()
+                    self.drop_block(self._block_in_motion)
+                if event.key == pygame.K_LEFT:
+                    if self._block_in_motion.x > 0:
+                        # erase the old shape and drop the new one down 1
+                        self._erase_block_in_motion()
+                        self.block_left(self._block_in_motion)
+                if event.key == pygame.K_RIGHT:
+                    if self._block_in_motion.right_most_block() < const.BOARD_WIDTH - 2:
+                        # erase the old shape and drop the new one down 1
+                        self._erase_block_in_motion()
+                        self.block_right(self._block_in_motion)
 
     def run(self):
         while True:

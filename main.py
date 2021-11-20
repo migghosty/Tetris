@@ -235,6 +235,25 @@ class TetrisGame:
         self._block_in_motion.y -= 1
         return self._block_in_motion.bottom_most_block() < const.BOARD_HEIGHT - 2
 
+    def row_is_filled(self, row: int):
+        for i in range(const.BOARD_WIDTH):
+            if self._grid[i][row] == None:
+                return False
+        return True
+
+    def clear_filled_rows(self):
+        rows = []
+        shape_grid = BLOCK_SHAPES[BLOCK_TYPES.index(self._block_in_motion.type)][self._block_in_motion.rot]
+        for i in range(len(shape_grid)):
+            rows.append(self._block_in_motion.y + 1 + i)
+
+        for row in rows:
+            if self.row_is_filled(row):
+                # clear this row
+                for i in range(const.BOARD_WIDTH-2):
+                    self._grid[i+1][row] = None
+                    self._erase_block(i+1,row)
+
     def handle_keys(self):
         if pygame.key.get_pressed()[pygame.K_LEFT]:
             # check if there is anything to the left of the block
@@ -280,8 +299,10 @@ class TetrisGame:
             self.handle_events()
 
             if not self.block_in_motion_can_move_down():
-                # lock the block in motion and spawn a new one
+                # lock the block in motion
                 self.place_block_in_motion_on_grid()
+                self.clear_filled_rows()
+                # spawn new block in motion
                 self._block_in_motion = self._get_random_block()
 
             self.draw_grid()

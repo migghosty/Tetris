@@ -235,24 +235,60 @@ class TetrisGame:
         self._block_in_motion.y -= 1
         return self._block_in_motion.bottom_most_block() < const.BOARD_HEIGHT - 2
 
-    def row_is_filled(self, row: int):
-        for i in range(const.BOARD_WIDTH):
-            if self._grid[i][row] == None:
-                return False
-        return True
-
-    def clear_filled_rows(self):
+    def get_rows_of_block_in_motion(self) -> [int]:
         rows = []
         shape_grid = BLOCK_SHAPES[BLOCK_TYPES.index(self._block_in_motion.type)][self._block_in_motion.rot]
         for i in range(len(shape_grid)):
             rows.append(self._block_in_motion.y + 1 + i)
 
+        return rows
+
+    def row_is_filled(self, row: int) -> bool:
+        for i in range(const.BOARD_WIDTH):
+            if self._grid[i][row] == None:
+                return False
+        return True
+
+    def _amount_to_drop(self, row: int, filled_rows: [int]) -> int:
+        amount = 0
+        for i in filled_rows:
+            if i > row:
+                amount += 1
+
+        return amount
+
+    def drop_column(self, col: int, filled_rows: [int]) -> None:
+        if filled_rows == []:
+            return
+
+        for row in range(const.BOARD_HEIGHT-3, 1, -1):
+            if self._grid[col][row] != None:
+                if self._amount_to_drop(row, filled_rows) != 0:
+                    self._grid[col][row+self._amount_to_drop(row, filled_rows)] = self._grid[col][row]
+                    self._grid[col][row] = None
+                    self._erase_block(col, row)
+
+    def drop_columns(self, filled_rows: [int]) -> None:
+        for i in range(1, const.BOARD_WIDTH-1):
+            self.drop_column(i, filled_rows)
+
+    def clear_filled_rows(self):
+        rows = self.get_rows_of_block_in_motion()
+
+        filled_rows = []
+
         for row in rows:
             if self.row_is_filled(row):
+                filled_rows.append(row)
+
                 # clear this row
                 for i in range(const.BOARD_WIDTH-2):
                     self._grid[i+1][row] = None
                     self._erase_block(i+1,row)
+
+        self.drop_columns(filled_rows)
+
+
 
     def handle_keys(self):
         if pygame.key.get_pressed()[pygame.K_LEFT]:
@@ -281,13 +317,23 @@ class TetrisGame:
                 sys.exit()
 
             if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_q:
+                    # exit game
+                    sys.exit()
+
                 if event.key == pygame.K_UP:
+                    # rotate the block
                     self._erase_block_in_motion()
                     self.rotate_shape(self._block_in_motion)
                     if (self._block_in_motion.x < 0 or
                             self._block_in_motion.right_most_block() > const.BOARD_WIDTH - 2 or
                             self._block_in_motion.bottom_most_block() > const.BOARD_HEIGHT - 2):
                         self.rotate_shape_back(self._block_in_motion)
+
+                if event.key == pygame.K_c:
+                    # respawn a new motion block
+                    self._erase_block_in_motion()
+                    self._block_in_motion = self._get_random_block()
 
         self.handle_keys()
 

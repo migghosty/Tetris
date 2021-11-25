@@ -97,8 +97,9 @@ class TetrisGame:
         # make the custom settings
         self._custom_settings()
 
-        # make the grid
+        # make the grid and get block
         self._grid = [[None for _ in range(const.BOARD_HEIGHT)] for _ in range(const.BOARD_WIDTH)]
+        self._next_block = self._get_random_block()
 
     def _initialize_pygame(self):
         # initialize pygame modules
@@ -118,6 +119,17 @@ class TetrisGame:
 
         self._screen.blit(img, (50, 50))
 
+        # next block text
+        font = pygame.font.SysFont("timesnewroman", 24)
+        green = (0,255,0)
+        nextBlockText = font.render("Next Block", True, green)
+        nextBlockRect = nextBlockText.get_rect()
+        nextBlockRect.center = (const.SCREEN_WIDTH // 2 + const.SCREEN_WIDTH // 4,
+                                const.SCREEN_HEIGHT // 2 - const.SCREEN_HEIGHT // 8)
+
+        self._screen.blit(nextBlockText, nextBlockRect)
+
+
     def _convert_board_coordinate(self, x: int, y: int) -> (int, int):
         return ( x*const.BLOCK_SIZE + const.TOP_LEFT[0], y*const.BLOCK_SIZE + const.TOP_LEFT[1] )
 
@@ -128,19 +140,6 @@ class TetrisGame:
         img = pygame.image.load(img_path).convert()
         img = pygame.transform.scale(img, (const.BLOCK_SIZE, const.BLOCK_SIZE))
         self._screen.blit(img, self._convert_board_coordinate(x,y))
-
-    def _erase_block(self, x: int, y: int) -> None:
-        # erase the block so it matches background
-        img = pygame.image.load("imgs/background.png").convert()
-        img = pygame.transform.scale(img, (const.BLOCK_SIZE, const.BLOCK_SIZE))
-        self._screen.blit(img, self._convert_board_coordinate(x, y))
-
-    def _erase_block_in_motion(self) -> None:
-        shape_grid = BLOCK_SHAPES[BLOCK_TYPES.index(self._block_in_motion.type)][self._block_in_motion.rot]
-        for i in range(len(shape_grid)):
-            for j in range(len(shape_grid[i])):
-                if shape_grid[i][j] == 1:
-                    self._erase_block(self._block_in_motion.x+1+j,self._block_in_motion.y+1+i)
 
     def draw_border(self) -> None:
         # draws the top and bottom row
@@ -156,6 +155,26 @@ class TetrisGame:
             self._draw_block(const.BOARD_WIDTH-1, i, "imgs/border_block.png")
             self._grid[0][i] = "imgs/border_block.png"
             self._grid[const.BOARD_WIDTH-1][i] = "imgs/border_block.png"
+
+    def _erase_block(self, x: int, y: int) -> None:
+        # erase the block so it matches background
+        img = pygame.image.load("imgs/background.png").convert()
+        img = pygame.transform.scale(img, (const.BLOCK_SIZE, const.BLOCK_SIZE))
+        self._screen.blit(img, self._convert_board_coordinate(x, y))
+
+    def _erase_block_in_motion(self) -> None:
+        shape_grid = BLOCK_SHAPES[BLOCK_TYPES.index(self._block_in_motion.type)][self._block_in_motion.rot]
+        for i in range(len(shape_grid)):
+            for j in range(len(shape_grid[i])):
+                if shape_grid[i][j] == 1:
+                    self._erase_block(self._block_in_motion.x+1+j,self._block_in_motion.y+1+i)
+
+    def _erase_next_block(self) -> None:
+        shape_grid = BLOCK_SHAPES[BLOCK_TYPES.index(self._next_block.type)][self._next_block.rot]
+        for i in range(len(shape_grid)):
+            for j in range(len(shape_grid[i])):
+                if shape_grid[i][j] == 1:
+                    self._erase_block(13+1+j,4+1+i)
 
     def draw_shape(self, block: Block) -> None:
         shape_grid = BLOCK_SHAPES[BLOCK_TYPES.index(block.type)][block.rot]
@@ -194,7 +213,15 @@ class TetrisGame:
         block.x += 1
 
     def _get_random_block(self) -> Block:
-        return Block(random.choice(BLOCK_TYPES),0,int(const.BOARD_WIDTH/2-3),0)
+        return Block(random.choice(BLOCK_TYPES),0,13,4)
+
+    def change_block_in_motion(self) -> None:
+        self._block_in_motion = self._next_block
+        self._block_in_motion.y = 0
+        self._block_in_motion.x = int(const.BOARD_WIDTH/2-3)
+        self._erase_next_block()
+        self._next_block = self._get_random_block()
+        self.draw_shape(self._next_block)
 
     def block_in_motion_can_move_left(self) -> bool:
         self.block_left(self._block_in_motion)
@@ -288,8 +315,6 @@ class TetrisGame:
 
         self.drop_columns(filled_rows)
 
-
-
     def handle_keys(self):
         if pygame.key.get_pressed()[pygame.K_LEFT]:
             # check if there is anything to the left of the block
@@ -333,13 +358,14 @@ class TetrisGame:
                 if event.key == pygame.K_c:
                     # respawn a new motion block
                     self._erase_block_in_motion()
-                    self._block_in_motion = self._get_random_block()
+                    self.change_block_in_motion()
 
         self.handle_keys()
 
     def run(self):
-        self._block_in_motion = self._get_random_block()
+        self.change_block_in_motion()
         self.draw_border()
+
         while True:
             pygame.time.Clock().tick(20)
             self.handle_events()
@@ -349,7 +375,7 @@ class TetrisGame:
                 self.place_block_in_motion_on_grid()
                 self.clear_filled_rows()
                 # spawn new block in motion
-                self._block_in_motion = self._get_random_block()
+                self.change_block_in_motion()
 
             self.draw_grid()
             self.draw_shape(self._block_in_motion)

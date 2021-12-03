@@ -6,3 +6,7 @@
 
 2. The game so far cannot actually be lost. Only way to quit is by force quitting or pressnig q.
     Once the user cannot spawn a block they should lose the game.
+
+3. Once the person gets farther in the game, the timer for the block to go down should be faster.
+
+4. High score tracker.

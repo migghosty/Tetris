@@ -382,19 +382,23 @@ class TetrisGame:
         self.draw_border()
 
         while True:
-            pygame.time.Clock().tick(20)
+            pygame.time.Clock().tick(15)
+
             self.handle_events()
+            self.draw_grid()
+            self.draw_shape(self._block_in_motion)
+            pygame.display.flip()
 
             if not self.block_in_motion_can_move_down():
+                # allow the player to move left/right for one second, then lock the block
+
                 # lock the block in motion
                 self.place_block_in_motion_on_grid()
                 self.clear_filled_rows()
                 # spawn new block in motion
                 self.change_block_in_motion()
 
-            self.draw_grid()
-            self.draw_shape(self._block_in_motion)
-            pygame.display.flip()
+
 
 if __name__ == "__main__":
     game = TetrisGame()

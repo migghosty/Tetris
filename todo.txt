@@ -1,0 +1,12 @@
+# this text file will hold some of the things I need to do in the game for the future
+
+1. I currently have it so if the block cannot go down, it locks it leaving no time for the
+    user to respond. I need to add a delay, so like once it cannot go down, pause for like a second
+    then lock the block.
+
+2. The game so far cannot actually be lost. Only way to quit is by force quitting or pressing q.
+    Once the user cannot spawn a block they should lose the game.
+
+3. Once the person gets farther in the game, the timer for the block to go down should be faster.
+
+4. High score tracker.

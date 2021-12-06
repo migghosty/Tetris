@@ -108,6 +108,10 @@ class TetrisGame:
         # define screen size
         self._screen = pygame.display.set_mode([const.SCREEN_WIDTH, const.SCREEN_HEIGHT])
 
+        # initialize the timer so the pieces go down
+        self.drop_block_event = pygame.USEREVENT+1
+        pygame.time.set_timer(self.drop_block_event, 500)
+
     def _custom_settings(self):
         # set caption and icon, and title for screen
         pygame.display.set_caption("Tetris Game")
@@ -315,26 +319,35 @@ class TetrisGame:
 
         self.drop_columns(filled_rows)
 
+    def move_block_in_motion_left(self):
+        # check if there is anything to the left of the block
+        if self.block_in_motion_can_move_left():
+            # erase the old shape and drop the new one down 1
+            self._erase_block_in_motion()
+            self.block_left(self._block_in_motion)
+
+    def move_block_in_motion_right(self):
+        # check if there is anything to the right of the block
+        if self.block_in_motion_can_move_right():
+            # erase the old shape and drop the new one down 1
+            self._erase_block_in_motion()
+            self.block_right(self._block_in_motion)
+
+    def move_block_in_motion_down(self):
+        if self.block_in_motion_can_move_down():
+            # erase the old shape and drop the new one down 1
+            self._erase_block_in_motion()
+            self.drop_block(self._block_in_motion)
+
     def handle_keys(self):
         if pygame.key.get_pressed()[pygame.K_LEFT]:
-            # check if there is anything to the left of the block
-            if self.block_in_motion_can_move_left():
-                # erase the old shape and drop the new one down 1
-                self._erase_block_in_motion()
-                self.block_left(self._block_in_motion)
+            self.move_block_in_motion_left()
 
         if pygame.key.get_pressed()[pygame.K_RIGHT]:
-            # check if there is anything to the right of the block
-            if self.block_in_motion_can_move_right():
-                # erase the old shape and drop the new one down 1
-                self._erase_block_in_motion()
-                self.block_right(self._block_in_motion)
+            self.move_block_in_motion_right()
 
         if pygame.key.get_pressed()[pygame.K_DOWN]:
-            if self.block_in_motion_can_move_down():
-                # erase the old shape and drop the new one down 1
-                self._erase_block_in_motion()
-                self.drop_block(self._block_in_motion)
+            self.move_block_in_motion_down()
 
     def handle_events(self):
         for event in pygame.event.get():
@@ -359,6 +372,8 @@ class TetrisGame:
                     # respawn a new motion block
                     self._erase_block_in_motion()
                     self.change_block_in_motion()
+            if event.type == self.drop_block_event:
+                self.move_block_in_motion_down()
 
         self.handle_keys()
 
@@ -367,19 +382,23 @@ class TetrisGame:
         self.draw_border()
 
         while True:
-            pygame.time.Clock().tick(20)
+            pygame.time.Clock().tick(15)
+
             self.handle_events()
+            self.draw_grid()
+            self.draw_shape(self._block_in_motion)
+            pygame.display.flip()
 
             if not self.block_in_motion_can_move_down():
+                # allow the player to move left/right for one second, then lock the block
+
                 # lock the block in motion
                 self.place_block_in_motion_on_grid()
                 self.clear_filled_rows()
                 # spawn new block in motion
                 self.change_block_in_motion()
 
-            self.draw_grid()
-            self.draw_shape(self._block_in_motion)
-            pygame.display.flip()
+
 
 if __name__ == "__main__":
     game = TetrisGame()

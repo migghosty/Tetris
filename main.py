@@ -91,6 +91,11 @@ class Block:
         return self.y + len(shape_grid)
 
 class TetrisGame:
+
+    '''
+    Initializing Tetris Game
+    '''
+
     def __init__(self):
         self._initialize_pygame()
 
@@ -133,9 +138,27 @@ class TetrisGame:
 
         self._screen.blit(nextBlockText, nextBlockRect)
 
+    '''
+    Miscellaneous
+    '''
+
+    def _get_random_block(self) -> Block:
+        return Block(random.choice(BLOCK_TYPES),0,13,4)
+
+    def change_block_in_motion(self) -> None:
+        self._block_in_motion = self._next_block
+        self._block_in_motion.y = 0
+        self._block_in_motion.x = int(const.BOARD_WIDTH/2-3)
+        self._erase_next_block()
+        self._next_block = self._get_random_block()
+        self.draw_shape(self._next_block)
 
     def _convert_board_coordinate(self, x: int, y: int) -> (int, int):
         return ( x*const.BLOCK_SIZE + const.TOP_LEFT[0], y*const.BLOCK_SIZE + const.TOP_LEFT[1] )
+
+    '''
+    Drawing
+    '''
 
     def _draw_block(self, x: int, y: int, img_path: str) -> None:
         # draw a single block with a given color at a given (x,y) position
@@ -160,26 +183,6 @@ class TetrisGame:
             self._grid[0][i] = "imgs/border_block.png"
             self._grid[const.BOARD_WIDTH-1][i] = "imgs/border_block.png"
 
-    def _erase_block(self, x: int, y: int) -> None:
-        # erase the block so it matches background
-        img = pygame.image.load("imgs/background.png").convert()
-        img = pygame.transform.scale(img, (const.BLOCK_SIZE, const.BLOCK_SIZE))
-        self._screen.blit(img, self._convert_board_coordinate(x, y))
-
-    def _erase_block_in_motion(self) -> None:
-        shape_grid = BLOCK_SHAPES[BLOCK_TYPES.index(self._block_in_motion.type)][self._block_in_motion.rot]
-        for i in range(len(shape_grid)):
-            for j in range(len(shape_grid[i])):
-                if shape_grid[i][j] == 1:
-                    self._erase_block(self._block_in_motion.x+1+j,self._block_in_motion.y+1+i)
-
-    def _erase_next_block(self) -> None:
-        shape_grid = BLOCK_SHAPES[BLOCK_TYPES.index(self._next_block.type)][self._next_block.rot]
-        for i in range(len(shape_grid)):
-            for j in range(len(shape_grid[i])):
-                if shape_grid[i][j] == 1:
-                    self._erase_block(13+1+j,4+1+i)
-
     def draw_shape(self, block: Block) -> None:
         shape_grid = BLOCK_SHAPES[BLOCK_TYPES.index(block.type)][block.rot]
         for i in range(len(shape_grid)):
@@ -201,60 +204,79 @@ class TetrisGame:
                     self._grid[self._block_in_motion.x+1+j][self._block_in_motion.y+1+i] = \
                         f"imgs/{self._block_in_motion.type}_block.png"
 
-    def rotate_shape(self, block: Block) -> None:
-        block.rot = (block.rot + 1) % len(BLOCK_SHAPES[BLOCK_TYPES.index(block.type)])
+    '''
+    Erasing
+    '''
 
-    def rotate_shape_back(self, block: Block) -> None:
-        block.rot = (block.rot - 1) % len(BLOCK_SHAPES[BLOCK_TYPES.index(block.type)])
+    def _erase_block(self, x: int, y: int) -> None:
+        # erase the block so it matches background
+        img = pygame.image.load("imgs/background.png").convert()
+        img = pygame.transform.scale(img, (const.BLOCK_SIZE, const.BLOCK_SIZE))
+        self._screen.blit(img, self._convert_board_coordinate(x, y))
 
-    def drop_block(self, block: Block) -> None:
-        block.y += 1
+    def _erase_block_in_motion(self) -> None:
+        shape_grid = BLOCK_SHAPES[BLOCK_TYPES.index(self._block_in_motion.type)][self._block_in_motion.rot]
+        for i in range(len(shape_grid)):
+            for j in range(len(shape_grid[i])):
+                if shape_grid[i][j] == 1:
+                    self._erase_block(self._block_in_motion.x+1+j,self._block_in_motion.y+1+i)
 
-    def block_left(self, block: Block) -> None:
-        block.x -= 1
+    def _erase_next_block(self) -> None:
+        shape_grid = BLOCK_SHAPES[BLOCK_TYPES.index(self._next_block.type)][self._next_block.rot]
+        for i in range(len(shape_grid)):
+            for j in range(len(shape_grid[i])):
+                if shape_grid[i][j] == 1:
+                    self._erase_block(14+j,5+i) # this is where the next block is located
 
-    def block_right(self, block: Block) -> None:
-        block.x += 1
+    '''
+    Movement of the block in motion
+    '''
 
-    def _get_random_block(self) -> Block:
-        return Block(random.choice(BLOCK_TYPES),0,13,4)
+    def rotate_shape(self) -> None:
+        self._block_in_motion.rot = (self._block_in_motion.rot + 1) \
+                                   % len(BLOCK_SHAPES[BLOCK_TYPES.index(self._block_in_motion.type)])
 
-    def change_block_in_motion(self) -> None:
-        self._block_in_motion = self._next_block
-        self._block_in_motion.y = 0
-        self._block_in_motion.x = int(const.BOARD_WIDTH/2-3)
-        self._erase_next_block()
-        self._next_block = self._get_random_block()
-        self.draw_shape(self._next_block)
+    def rotate_shape_back(self) -> None:
+        self._block_in_motion.rot = (self._block_in_motion.rot - 1) % \
+                                   len(BLOCK_SHAPES[BLOCK_TYPES.index(self._block_in_motion.type)])
+
+    def drop_block(self) -> None:
+        self._block_in_motion.y += 1
+
+    def block_left(self) -> None:
+        self._block_in_motion.x -= 1
+
+    def block_right(self) -> None:
+        self._block_in_motion.x += 1
 
     def block_in_motion_can_move_left(self) -> bool:
-        self.block_left(self._block_in_motion)
+        self.block_left()
         shape_grid = BLOCK_SHAPES[BLOCK_TYPES.index(self._block_in_motion.type)][self._block_in_motion.rot]
         for i in range(len(shape_grid)):
             for j in range(len(shape_grid[i])):
                 if (shape_grid[i][j] == 1 and
                         self._grid[self._block_in_motion.x+1+j][self._block_in_motion.y+1+i] != None):
-                    self.block_right(self._block_in_motion)
+                    self.block_right()
                     return False
 
-        self.block_right(self._block_in_motion)
+        self.block_right()
         return self._block_in_motion.x > 0
 
     def block_in_motion_can_move_right(self) -> bool:
-        self.block_right(self._block_in_motion)
+        self.block_right()
         shape_grid = BLOCK_SHAPES[BLOCK_TYPES.index(self._block_in_motion.type)][self._block_in_motion.rot]
         for i in range(len(shape_grid)):
             for j in range(len(shape_grid[i])):
                 if (shape_grid[i][j] == 1 and
                         self._grid[self._block_in_motion.x+1+j][self._block_in_motion.y+1+i] != None):
-                    self.block_left(self._block_in_motion)
+                    self.block_left()
                     return False
 
-        self.block_left(self._block_in_motion)
+        self.block_left()
         return self._block_in_motion.right_most_block() < const.BOARD_WIDTH - 2
 
     def block_in_motion_can_move_down(self) -> bool:
-        self.drop_block(self._block_in_motion)
+        self.drop_block()
         shape_grid = BLOCK_SHAPES[BLOCK_TYPES.index(self._block_in_motion.type)][self._block_in_motion.rot]
         for i in range(len(shape_grid)):
             for j in range(len(shape_grid[i])):
@@ -265,6 +287,30 @@ class TetrisGame:
 
         self._block_in_motion.y -= 1
         return self._block_in_motion.bottom_most_block() < const.BOARD_HEIGHT - 2
+
+    def move_block_in_motion_left(self):
+        # check if there is anything to the left of the block
+        if self.block_in_motion_can_move_left():
+            # erase the old shape and drop the new one down 1
+            self._erase_block_in_motion()
+            self.block_left()
+
+    def move_block_in_motion_right(self):
+        # check if there is anything to the right of the block
+        if self.block_in_motion_can_move_right():
+            # erase the old shape and drop the new one down 1
+            self._erase_block_in_motion()
+            self.block_right()
+
+    def move_block_in_motion_down(self):
+        if self.block_in_motion_can_move_down():
+            # erase the old shape and drop the new one down 1
+            self._erase_block_in_motion()
+            self.drop_block()
+
+    '''
+    Deleting rows
+    '''
 
     def get_rows_of_block_in_motion(self) -> [int]:
         rows = []
@@ -319,26 +365,6 @@ class TetrisGame:
 
         self.drop_columns(filled_rows)
 
-    def move_block_in_motion_left(self):
-        # check if there is anything to the left of the block
-        if self.block_in_motion_can_move_left():
-            # erase the old shape and drop the new one down 1
-            self._erase_block_in_motion()
-            self.block_left(self._block_in_motion)
-
-    def move_block_in_motion_right(self):
-        # check if there is anything to the right of the block
-        if self.block_in_motion_can_move_right():
-            # erase the old shape and drop the new one down 1
-            self._erase_block_in_motion()
-            self.block_right(self._block_in_motion)
-
-    def move_block_in_motion_down(self):
-        if self.block_in_motion_can_move_down():
-            # erase the old shape and drop the new one down 1
-            self._erase_block_in_motion()
-            self.drop_block(self._block_in_motion)
-
     def handle_keys(self):
         if pygame.key.get_pressed()[pygame.K_LEFT]:
             self.move_block_in_motion_left()
@@ -362,16 +388,18 @@ class TetrisGame:
                 if event.key == pygame.K_UP:
                     # rotate the block
                     self._erase_block_in_motion()
-                    self.rotate_shape(self._block_in_motion)
+                    self.rotate_shape()
                     if (self._block_in_motion.x < 0 or
                             self._block_in_motion.right_most_block() > const.BOARD_WIDTH - 2 or
                             self._block_in_motion.bottom_most_block() > const.BOARD_HEIGHT - 2):
-                        self.rotate_shape_back(self._block_in_motion)
+                        self.rotate_shape_back()
 
                 if event.key == pygame.K_c:
                     # respawn a new motion block
                     self._erase_block_in_motion()
                     self.change_block_in_motion()
+
+            # automatically move the block down
             if event.type == self.drop_block_event:
                 self.move_block_in_motion_down()
 
